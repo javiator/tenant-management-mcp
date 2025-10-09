@@ -1,0 +1,70 @@
+---
+description: MCP server rules for tenant-management-mcp Python project
+globs: [
+  "src/backend_mcp_uv/**/*.py",
+  "*.toml",
+  "*.md",
+  ".env*"
+]
+alwaysApply: true
+---
+
+# Backend MCP (Python/uv) Rules
+
+## Project Scope
+- Python-based MCP server using the `mcp` package’s FastMCP implementation that mirrors the Tenant Management backend REST API.
+- Managed with `uv`; runtime target is Python 3.11+.
+- Source lives under `src/backend_mcp_uv/` with clear module boundaries.
+
+## Engineering Standards
+- Use `pydantic` models for environment parsing and data validation (requests and responses).
+- All HTTP calls go through `http_client.py` using `httpx.AsyncClient` with bearer token support.
+- Raise `BackendApiError` on non-2xx responses; include backend-provided message/details.
+- Avoid shared mutable state between tools; treat each invocation as independent.
+- Keep tool functions lightweight: validate input, call backend, return structured data.
+
+## Tool Design Guidelines
+- Register one tool per backend operation (CRUD + relationship lookups).
+- Prefer returning typed objects or lists; text confirmations only when backend returns no body.
+- For updates, require the record identifier plus at least one field to change; enforce via `pydantic`.
+- Document new tools in `README.md`, covering purpose, expected inputs, and outputs.
+- Mirror REST semantics closely so agent workflows stay predictable.
+
+## File Organization
+```
+tenant-management-mcp/
+├── pyproject.toml          # uv project definition
+├── README.md               # Instructions and tool catalogue
+├── .env.example            # Required environment variables
+└── src/backend_mcp_uv/
+    ├── __init__.py
+    ├── __main__.py
+    ├── config.py           # Pydantic settings
+    ├── http_client.py      # HTTP wrapper + error handling
+    ├── schemas.py          # Pydantic models and adapters
+    ├── server.py           # FastMCP server factory
+    └── tools/              # Tool registrations grouped by domain
+```
+
+## Development Workflow
+1. Define or update response/request schemas in `schemas.py`.
+2. Add or adjust tool functions within `tools/`.
+3. Update `README.md` with tool documentation and usage examples.
+4. Run `uv run backend-mcp-uv` (or `uv run python -m backend_mcp_uv`) to smoke-test locally.
+
+## Testing & Validation
+- Prefer lightweight async tests with `pytest` + `pytest-asyncio` for helper logic.
+- For new HTTP helpers, mock the backend responses using `httpx.MockTransport`.
+- Document manual verification steps if automated coverage is impractical.
+
+## Security & Config
+- Environment variables: `BACKEND_MCP_BASE_URL` (required) and `BACKEND_MCP_API_TOKEN` (optional).
+- Never commit real secrets; update `.env.example` when adding new variables.
+- Sanitize outbound payloads (use `model_dump(exclude_none=True)` where appropriate).
+
+## Contribution Notes
+- Keep imports absolute within the `backend_mcp_uv` package.
+- Follow Ruff lint rules defined in `pyproject.toml` (line length 100, standard E/F/I/W checks).
+- When adding dependencies, update `pyproject.toml`; regenerate the lockfile with `uv lock` if needed.
+- Prefer the `mcp.server.fastmcp.FastMCP` API for registering tools; avoid legacy placeholders.
+- Use exhaustive type hints for public functions to aid MCP schema generation.
