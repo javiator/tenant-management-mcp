@@ -10,7 +10,7 @@ from .tools import register_all_tools
 def build_server(*, host: str | None = None, port: int | None = None) -> FastMCP:
     """Configure the MCP server with all registered tools."""
     server = FastMCP(
-        name="tenant-management-backend-mcp-uv",
+        name="tenant-management-mcp",
         instructions="Expose the Tenant Management backend REST API as MCP tools.",
         host=host or "127.0.0.1",
         port=port or 8000,

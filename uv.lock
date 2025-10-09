@@ -41,7 +41,7 @@ wheels = [
 ]
 
 [[package]]
-name = "backend-mcp-uv"
+name = "tm-mcp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

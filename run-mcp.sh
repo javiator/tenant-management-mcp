@@ -1,3 +1,7 @@
 #!/bin/bash
-cd /home/javiator/work/projects/tenant-management/tenant-management-java-app/backend-mcp-uv
-exec /home/javiator/.local/bin/uv run python -m backend_mcp_uv "$@"
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+exec /home/javiator/.local/bin/uv run python -m tm_mcp "$@"

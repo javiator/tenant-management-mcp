@@ -1,5 +1,5 @@
 [project]
-name = "backend-mcp-uv"
+name = "tm-mcp"
 version = "0.1.0"
 description = "Model Context Protocol server exposing Tenant Management backend APIs using uv-managed Python runtime."
 readme = "README.md"
@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-backend-mcp-uv = "backend_mcp_uv.__main__:main"
+tm-mcp = "tm_mcp.__main__:main"
 
 [tool.uv]
 package = true

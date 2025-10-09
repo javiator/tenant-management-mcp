@@ -1,4 +1,4 @@
-"""Entry point for running the MCP server via `python -m backend_mcp_uv`."""
+"""Entry point for running the MCP server via `python -m tm_mcp`."""
 
 from __future__ import annotations
 

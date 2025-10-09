@@ -1,4 +1,4 @@
-# Backend MCP Server (Python / uv)
+# TM MCP Server (Python / uv)
 
 Python implementation of the Model Context Protocol (MCP) server that mirrors the Tenant Management backend REST API. Built with the `mcp` library’s FastMCP server plus `pydantic` and `httpx`, this project converts every backend capability into agent-friendly MCP tools.
 
@@ -13,21 +13,21 @@ Use this server whenever an agentic workflow needs CRUD access to properties, te
 ## Quick Start
 
 ```bash
-cd backend-mcp-uv
+cd tenant-management-mcp
 cp .env.example .env                       # adjust configuration
 uv sync                                    # install dependencies
 # Default (stdio transport) for MCP clients
-uv run backend-mcp-uv
+uv run tm-mcp
 
 # Or serve over HTTP for manual testing
-uv run backend-mcp-uv --transport streamable-http --host 0.0.0.0 --port 8000
+uv run tm-mcp --transport streamable-http --host 0.0.0.0 --port 8000
 ```
 
 > **Note:** The default `stdio` transport is designed for MCP-compatible clients that spawn the
 > server as a child process. Use the HTTP or SSE transports when you need a long-running server for
 > manual testing.
 
-During development you can also run `uv run python -m backend_mcp_uv` or attach a debugger to the module entry point.
+During development you can also run `uv run python -m tm_mcp` or attach a debugger to the module entry point.
 
 ## Configuration
 
@@ -101,7 +101,7 @@ Optional tenant fields include passport metadata, contact numbers, rent/security
 
 ## Development Notes
 
-- Tool code lives in `src/backend_mcp_uv/tools/` and should stay thin—validate input, invoke the backend, return typed data.
+- Tool code lives in `src/tm_mcp/tools/` and should stay thin—validate input, invoke the backend, return typed data.
 - `schemas.py` centralizes all `pydantic` models. Update it before changing tool behavior.
 - `http_client.py` encapsulates HTTP concerns (timeouts, auth headers, error handling). Extend it if retry logic or logging is needed.
 - Lint with `uv run ruff check .` and add tests with `uv run pytest`.
@@ -115,4 +115,4 @@ Optional tenant fields include passport metadata, contact numbers, rent/security
 
 ## MCP Client Integration
 
-Run the server with `uv run backend-mcp-uv` and configure your MCP-compatible client (e.g., Cursor MCP, Claude Desktop) to point at the resulting socket or transport endpoint. Refer to your client’s documentation for wiring internal MCP servers.
+Run the server with `uv run tm-mcp` and configure your MCP-compatible client (e.g., Cursor MCP, Claude Desktop) to point at the resulting socket or transport endpoint. Refer to your client’s documentation for wiring internal MCP servers.

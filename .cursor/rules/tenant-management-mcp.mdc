@@ -1,7 +1,7 @@
 ---
 description: MCP server rules for tenant-management-mcp Python project
 globs: [
-  "src/backend_mcp_uv/**/*.py",
+  "src/tm_mcp/**/*.py",
   "*.toml",
   "*.md",
   ".env*"
@@ -14,7 +14,7 @@ alwaysApply: true
 ## Project Scope
 - Python-based MCP server using the `mcp` package’s FastMCP implementation that mirrors the Tenant Management backend REST API.
 - Managed with `uv`; runtime target is Python 3.11+.
-- Source lives under `src/backend_mcp_uv/` with clear module boundaries.
+- Source lives under `src/tm_mcp/` with clear module boundaries.
 
 ## Engineering Standards
 - Use `pydantic` models for environment parsing and data validation (requests and responses).
@@ -36,7 +36,7 @@ tenant-management-mcp/
 ├── pyproject.toml          # uv project definition
 ├── README.md               # Instructions and tool catalogue
 ├── .env.example            # Required environment variables
-└── src/backend_mcp_uv/
+└── src/tm_mcp/
     ├── __init__.py
     ├── __main__.py
     ├── config.py           # Pydantic settings
@@ -50,7 +50,7 @@ tenant-management-mcp/
 1. Define or update response/request schemas in `schemas.py`.
 2. Add or adjust tool functions within `tools/`.
 3. Update `README.md` with tool documentation and usage examples.
-4. Run `uv run backend-mcp-uv` (or `uv run python -m backend_mcp_uv`) to smoke-test locally.
+4. Run `uv run tm-mcp` (or `uv run python -m tm_mcp`) to smoke-test locally.
 
 ## Testing & Validation
 - Prefer lightweight async tests with `pytest` + `pytest-asyncio` for helper logic.
@@ -63,7 +63,7 @@ tenant-management-mcp/
 - Sanitize outbound payloads (use `model_dump(exclude_none=True)` where appropriate).
 
 ## Contribution Notes
-- Keep imports absolute within the `backend_mcp_uv` package.
+- Keep imports absolute within the `tm_mcp` package.
 - Follow Ruff lint rules defined in `pyproject.toml` (line length 100, standard E/F/I/W checks).
 - When adding dependencies, update `pyproject.toml`; regenerate the lockfile with `uv lock` if needed.
 - Prefer the `mcp.server.fastmcp.FastMCP` API for registering tools; avoid legacy placeholders.
