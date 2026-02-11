@@ -1,0 +1,71 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# UV cache
+.uv-cache/
+
+# Testing
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+*.cover
+
+# Linting
+.ruff_cache/
+.mypy_cache/
+.pylint.d/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Environment files (secrets should not be in image)
+.env
+.env.*
+!.env.example
+
+# Keys and secrets
+.keys.json
+*.pem
+*.key
+
+# Test files
+test_*.py
+tests/
+test_auth.sh
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db

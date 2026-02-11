@@ -7,3 +7,6 @@ __pycache__/
 dist/
 *.egg-info/
 .env
+.env.local
+.env.*.local
+.keys.json

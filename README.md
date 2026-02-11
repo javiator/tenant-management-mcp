@@ -35,8 +35,32 @@ During development you can also run `uv run python -m tm_mcp` or attach a debugg
 |----------|-------------|---------|
 | `BACKEND_MCP_BASE_URL` | Base URL of the Spring Boot backend REST API. Trailing slashes are stripped automatically. | `http://localhost:8080` |
 | `BACKEND_MCP_API_TOKEN` | Optional bearer token for authenticated deployments. | _unset_ |
+| `MCP_API_KEYS` | Comma-separated list of API keys for client authentication. Leave empty to disable authentication (development mode). | _unset_ |
 
 Configuration is parsed through `pydantic` on startup; misconfigurations raise descriptive errors immediately.
+
+## Authentication
+
+The MCP server supports API key authentication to secure access to your tenant management data. Clients must include an `X-API-Key` header with a valid API key.
+
+**Quick Start:**
+```bash
+# Generate API keys
+uv run python scripts/manage_keys.py generate --name "Your Name"
+
+# Configure authentication
+export MCP_API_KEYS="mcp_key1,mcp_key2,mcp_key3"
+
+# Start authenticated server
+uv run tm-mcp --transport streamable-http
+```
+
+**Documentation:**
+- [Authentication Guide](docs/AUTHENTICATION.md) - Complete authentication setup and usage
+- [Key Management Guide](docs/KEY_MANAGEMENT.md) - Managing API keys
+- [Quick Start: Keys](docs/QUICK_START_KEYS.md) - 5-minute quick start
+
+**Note:** Authentication is only enforced on HTTP/SSE transports. Leave `MCP_API_KEYS` empty for local development without authentication.
 
 ## Tool Catalogue
 

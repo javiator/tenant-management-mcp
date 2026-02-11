@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import logging
+
 from mcp.server.fastmcp import FastMCP
 
+from .auth import ApiKeyValidator
 from .tools import register_all_tools
+
+logger = logging.getLogger(__name__)
 
 
 def build_server(*, host: str | None = None, port: int | None = None) -> FastMCP:
@@ -15,6 +20,20 @@ def build_server(*, host: str | None = None, port: int | None = None) -> FastMCP
         host=host or "127.0.0.1",
         port=port or 8000,
     )
+
+    # Initialize authentication validator
+    validator = ApiKeyValidator()
+    if validator.is_authentication_enabled():
+        logger.info(
+            "Authentication enabled with %d configured API keys",
+            len(validator._allowed_keys),
+        )
+    else:
+        logger.warning(
+            "Authentication DISABLED - no API keys configured. "
+            "Set MCP_API_KEYS environment variable to enable authentication."
+        )
+
     register_all_tools(server)
     return server
 
@@ -28,4 +47,10 @@ def run(
 ) -> None:
     """Run the MCP server."""
     server = build_server(host=host, port=port)
+
+    # Note: For HTTP-based transports, authentication should be handled at the infrastructure level
+    # (e.g., Cloud Run with IAP, API Gateway, or reverse proxy like nginx/Caddy with auth middleware)
+    # For development without such infrastructure, MCP_API_KEYS check is informational only.
+    # In production on Cloud Run, consider using Cloud Run's built-in authentication or a gateway.
+
     server.run(transport=transport, mount_path=mount_path)

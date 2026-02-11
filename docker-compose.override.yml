@@ -1,0 +1,18 @@
+# Docker Compose override for development
+# This file is automatically loaded by docker-compose and merged with docker-compose.yml
+# Use this for development-specific settings
+
+services:
+  mcp-server:
+    # Note: Source code mounting disabled by default due to uv editable install issues
+    # To enable, uncomment the volumes section below and rebuild
+    # volumes:
+    #   - ./src:/app/src:ro
+
+    # Override command for development (e.g., with debug flags)
+    # command: ["uv", "run", "tm-mcp", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000"]
+
+    # Development environment variables
+    environment:
+      # Add any dev-specific env vars here
+      LOG_LEVEL: DEBUG

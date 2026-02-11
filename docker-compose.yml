@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # TM MCP Server
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tm-mcp:latest
+    container_name: tm-mcp-server
+    ports:
+      - "8000:8000"
+    environment:
+      # Backend API configuration
+      BACKEND_MCP_BASE_URL: ${BACKEND_MCP_BASE_URL:-http://host.docker.internal:8080}
+      BACKEND_MCP_API_TOKEN: ${BACKEND_MCP_API_TOKEN:-}
+
+      # MCP Server authentication
+      # Load from .env or use empty string (no auth) for development
+      MCP_API_KEYS: ${MCP_API_KEYS:-}
+
+    # Mount source code for development (optional - comment out for production-like testing)
+    # volumes:
+    #   - ./src:/app/src:ro
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+    # Resource limits (optional)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    networks:
+      - mcp-network
+
+networks:
+  mcp-network:
+    driver: bridge
