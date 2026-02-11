@@ -95,6 +95,15 @@ async def request_json(
     try:
         return adapter.validate_python(payload)
     except ValidationError as exc:
+        # Some backend endpoints wrap results in a {"data": ...} object.
+        # If the initial validation fails, try unwrapping and validating again.
+        if isinstance(payload, dict) and "data" in payload:
+            try:
+                return adapter.validate_python(payload["data"])
+            except ValidationError:
+                # If unwrapped validation also fails, raise the original error
+                pass
+
         raise BackendApiError(
             response.status_code,
             "Backend response validation failed.",
