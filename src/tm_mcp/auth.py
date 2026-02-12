@@ -1,29 +1,23 @@
 """Bearer token authentication for the MCP server.
 
-Implements the MCP SDK's TokenVerifier protocol so that FastMCP's built-in
-BearerAuthBackend and RequireAuthMiddleware enforce ``Authorization: Bearer``
-on every MCP route automatically.
+Provides a plain Starlette middleware that validates ``Authorization: Bearer``
+tokens on MCP routes.  This deliberately avoids the SDK's built-in OAuth auth
+machinery (AuthSettings / token_verifier) so that clients like Gemini are not
+tricked into starting an OAuth discovery flow — they just send the pre-shared
+token and it works.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-from typing import Optional, Set
+from typing import Set
 
-from mcp.server.auth.provider import AccessToken
+from starlette.requests import Request
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)
-
-
-class AuthenticationError(Exception):
-    """Raised when bearer token authentication fails."""
-
-    pass
-
-
-# Backward compatibility alias
-ApiKeyAuthError = AuthenticationError
 
 
 def _load_tokens_from_env() -> Set[str]:
@@ -34,38 +28,71 @@ def _load_tokens_from_env() -> Set[str]:
     return {t.strip() for t in keys_str.split(",") if t.strip()}
 
 
-class McpBearerTokenVerifier:
-    """Implements the MCP SDK ``TokenVerifier`` protocol.
+class BearerTokenMiddleware:
+    """ASGI middleware that enforces ``Authorization: Bearer <token>`` on /mcp routes.
 
-    FastMCP calls ``verify_token(token)`` for every inbound HTTP request
-    that carries an ``Authorization: Bearer <token>`` header.  Returning an
-    ``AccessToken`` means "allow"; returning ``None`` means "reject with 401".
+    Non-MCP paths (health checks, etc.) pass through without authentication.
+    The 401 response is a plain JSON body — no ``WWW-Authenticate`` OAuth
+    challenge, so MCP clients won't attempt an OAuth discovery flow.
     """
 
-    def __init__(self) -> None:
-        self._allowed_tokens = _load_tokens_from_env()
+    def __init__(self, app: ASGIApp, *, allowed_tokens: Set[str]) -> None:
+        self.app = app
+        self._allowed_tokens = allowed_tokens
 
-    @property
-    def token_count(self) -> int:
-        return len(self._allowed_tokens)
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
 
-    def is_authentication_enabled(self) -> bool:
-        return self.token_count > 0
+        request = Request(scope)
 
-    async def verify_token(self, token: str) -> Optional[AccessToken]:
-        """Verify a bearer token against the configured allow-list.
+        # Only protect the /mcp endpoint
+        if not request.url.path.startswith("/mcp"):
+            await self.app(scope, receive, send)
+            return
 
-        Returns an ``AccessToken`` on success or ``None`` on failure.
-        """
-        if token in self._allowed_tokens:
-            return AccessToken(
-                token=token,
-                client_id="mcp-client",
-                scopes=[],
+        auth_header = request.headers.get("authorization", "")
+        if not auth_header.lower().startswith("bearer "):
+            await self._send_error(
+                send,
+                status_code=401,
+                message="Missing bearer token. Provide Authorization: Bearer <token> header.",
             )
-        return None
+            return
+
+        token = auth_header[7:]
+        if token not in self._allowed_tokens:
+            await self._send_error(
+                send,
+                status_code=401,
+                message="Invalid bearer token.",
+            )
+            return
+
+        await self.app(scope, receive, send)
+
+    @staticmethod
+    async def _send_error(send: Send, *, status_code: int, message: str) -> None:
+        body = json.dumps({"error": "unauthorized", "message": message}).encode()
+        await send(
+            {
+                "type": "http.response.start",
+                "status": status_code,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode()),
+                ],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
 
 
-# Keep the old name around so existing imports don't break.
-BearerTokenValidator = McpBearerTokenVerifier
-ApiKeyValidator = McpBearerTokenVerifier
+def is_authentication_enabled() -> bool:
+    """Check whether MCP_API_KEYS is configured."""
+    return bool(_load_tokens_from_env())
+
+
+def get_allowed_tokens() -> Set[str]:
+    """Return the set of configured bearer tokens."""
+    return _load_tokens_from_env()
