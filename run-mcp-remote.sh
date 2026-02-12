@@ -5,6 +5,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Try to find uv in common locations if not in PATH
+UV_BIN=$(which uv 2>/dev/null || echo "/home/javiator/.local/bin/uv")
+
 # Load .env file if it exists
 if [ -f .env ]; then
     set -a
@@ -42,6 +45,6 @@ echo "Starting mcp-proxy..." >&2
 echo "Connecting to: $MCP_REMOTE_URL" >&2
 
 # Use --quiet and --no-progress to ensure NO output on stdout except MCP JSON
-exec uv run --quiet --no-progress mcp-proxy \
+exec "$UV_BIN" run --quiet --no-progress mcp-proxy \
     --headers X-API-Key "$MCP_API_KEY" \
     "$MCP_REMOTE_URL" "$@"
