@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
+from mcp.server.fastmcp import Context
 from pydantic import Field, PositiveInt
 
+from ..auth import authenticated
 from ..http_client import request_json, request_void
 from ..schemas import (
     Property,
@@ -25,11 +27,14 @@ def register_property_tools(server) -> None:
         name="list_properties",
         description="Retrieve every property managed by the backend.",
     )
-    async def list_properties() -> list[Property]:
+    @authenticated
+    async def list_properties(context: Context) -> list[Property]:
         return await request_json("GET", "/api/properties", adapter=property_list_adapter)
 
     @server.tool(name="get_property", description="Fetch a single property by identifier.")
+    @authenticated
     async def get_property(
+        context: Context,
         property_id: Annotated[PositiveInt, Field(description="Unique property identifier")],
     ) -> Property:
         return await request_json(
@@ -42,7 +47,8 @@ def register_property_tools(server) -> None:
         name="create_property",
         description="Create a property. Requires address, rent, and maintenance amount.",
     )
-    async def create_property(payload: PropertyInput) -> Property:
+    @authenticated
+    async def create_property(context: Context, payload: PropertyInput) -> Property:
         return await request_json(
             "POST",
             "/api/properties",
@@ -54,7 +60,8 @@ def register_property_tools(server) -> None:
         name="update_property",
         description="Update an existing property. Supply the property identifier and full payload.",
     )
-    async def update_property(payload: PropertyUpdate) -> Property:
+    @authenticated
+    async def update_property(context: Context, payload: PropertyUpdate) -> Property:
         body = payload.model_dump()
         property_id = body.pop("id")
         return await request_json(
@@ -65,7 +72,9 @@ def register_property_tools(server) -> None:
         )
 
     @server.tool(name="delete_property", description="Delete a property by identifier.")
+    @authenticated
     async def delete_property(
+        context: Context,
         property_id: Annotated[PositiveInt, Field(description="Unique property identifier")],
     ) -> str:
         await request_void("DELETE", f"/api/properties/{property_id}")
@@ -75,7 +84,9 @@ def register_property_tools(server) -> None:
         name="list_property_transactions",
         description="List transactions associated with a property.",
     )
+    @authenticated
     async def list_property_transactions(
+        context: Context,
         property_id: Annotated[PositiveInt, Field(description="Unique property identifier")],
     ) -> list[Transaction]:
         return await request_json(

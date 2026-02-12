@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
+from mcp.server.fastmcp import Context
 from pydantic import Field, PositiveInt
 
+from ..auth import authenticated
 from ..http_client import request_json, request_void
 from ..schemas import (
     Transaction,
@@ -28,14 +30,17 @@ def register_transaction_tools(server) -> None:
         name="list_transactions",
         description=f"Retrieve all property and tenant transactions. {payment_logic_note}",
     )
-    async def list_transactions() -> list[Transaction]:
+    @authenticated
+    async def list_transactions(context: Context) -> list[Transaction]:
         return await request_json("GET", "/api/transactions", adapter=transaction_list_adapter)
 
     @server.tool(
         name="get_transaction",
         description=f"Fetch a transaction by identifier. {payment_logic_note}",
     )
+    @authenticated
     async def get_transaction(
+        context: Context,
         transaction_id: Annotated[PositiveInt, Field(description="Unique transaction identifier")],
     ) -> Transaction:
         return await request_json(
@@ -48,7 +53,8 @@ def register_transaction_tools(server) -> None:
         name="create_transaction",
         description="Create a transaction. Requires property, type, amount, and transaction date.",
     )
-    async def create_transaction(payload: TransactionCreate) -> Transaction:
+    @authenticated
+    async def create_transaction(context: Context, payload: TransactionCreate) -> Transaction:
         return await request_json(
             "POST",
             "/api/transactions",
@@ -60,7 +66,10 @@ def register_transaction_tools(server) -> None:
         name="update_transaction",
         description="Update a transaction by identifier. Provide at least one field to change.",
     )
-    async def update_transaction(payload: TransactionUpdatePayload) -> Transaction:
+    @authenticated
+    async def update_transaction(
+        context: Context, payload: TransactionUpdatePayload
+    ) -> Transaction:
         body = payload.model_dump(exclude_none=True)
         transaction_id = body.pop("id")
         return await request_json(
@@ -71,7 +80,9 @@ def register_transaction_tools(server) -> None:
         )
 
     @server.tool(name="delete_transaction", description="Delete a transaction by identifier.")
+    @authenticated
     async def delete_transaction(
+        context: Context,
         transaction_id: Annotated[PositiveInt, Field(description="Unique transaction identifier")],
     ) -> str:
         await request_void("DELETE", f"/api/transactions/{transaction_id}")
