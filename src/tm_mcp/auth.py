@@ -1,11 +1,19 @@
-"""Authentication middleware for the MCP server."""
+"""Bearer token authentication for the MCP server.
+
+Implements the MCP SDK's TokenVerifier protocol so that FastMCP's built-in
+BearerAuthBackend and RequireAuthMiddleware enforce ``Authorization: Bearer``
+on every MCP route automatically.
+"""
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Optional, Set
 
-from mcp.server.fastmcp import Context
+from mcp.server.auth.provider import AccessToken
+
+logger = logging.getLogger(__name__)
 
 
 class AuthenticationError(Exception):
@@ -18,109 +26,46 @@ class AuthenticationError(Exception):
 ApiKeyAuthError = AuthenticationError
 
 
-class BearerTokenValidator:
-    """Validates bearer tokens against configured allowed tokens."""
+def _load_tokens_from_env() -> Set[str]:
+    """Load allowed tokens from the MCP_API_KEYS environment variable."""
+    keys_str = os.environ.get("MCP_API_KEYS", "")
+    if not keys_str:
+        return set()
+    return {t.strip() for t in keys_str.split(",") if t.strip()}
+
+
+class McpBearerTokenVerifier:
+    """Implements the MCP SDK ``TokenVerifier`` protocol.
+
+    FastMCP calls ``verify_token(token)`` for every inbound HTTP request
+    that carries an ``Authorization: Bearer <token>`` header.  Returning an
+    ``AccessToken`` means "allow"; returning ``None`` means "reject with 401".
+    """
 
     def __init__(self) -> None:
-        """Initialize the validator with tokens from environment."""
-        self._allowed_tokens = self._load_tokens_from_env()
+        self._allowed_tokens = _load_tokens_from_env()
 
-    def _load_tokens_from_env(self) -> Set[str]:
-        """Load allowed tokens from MCP_API_KEYS environment variable."""
-        keys_str = os.environ.get("MCP_API_KEYS", "")
-        if not keys_str:
-            return set()
-
-        # Split by comma and strip whitespace
-        tokens = {token.strip() for token in keys_str.split(",") if token.strip()}
-        return tokens
+    @property
+    def token_count(self) -> int:
+        return len(self._allowed_tokens)
 
     def is_authentication_enabled(self) -> bool:
-        """Check if authentication is enabled (i.e., tokens are configured)."""
-        return len(self._allowed_tokens) > 0
+        return self.token_count > 0
 
-    def validate_token(self, token: Optional[str]) -> bool:
+    async def verify_token(self, token: str) -> Optional[AccessToken]:
+        """Verify a bearer token against the configured allow-list.
+
+        Returns an ``AccessToken`` on success or ``None`` on failure.
         """
-        Validate a bearer token.
-
-        Args:
-            token: The bearer token to validate
-
-        Returns:
-            True if valid, False otherwise
-        """
-        if not self.is_authentication_enabled():
-            # No tokens configured = authentication disabled (development mode)
-            return True
-
-        if not token:
-            return False
-
-        return token in self._allowed_tokens
-
-    def require_valid_token(self, token: Optional[str]) -> None:
-        """
-        Validate a bearer token and raise an exception if invalid.
-
-        Args:
-            token: The bearer token to validate
-
-        Raises:
-            AuthenticationError: If the token is invalid or missing
-        """
-        if not self.validate_token(token):
-            if not self.is_authentication_enabled():
-                # Should never happen, but just in case
-                return
-
-            if not token:
-                raise AuthenticationError(
-                    "Missing bearer token. Provide Authorization: Bearer <token> header."
-                )
-            else:
-                raise AuthenticationError("Invalid bearer token.")
+        if token in self._allowed_tokens:
+            return AccessToken(
+                token=token,
+                client_id="mcp-client",
+                scopes=[],
+            )
+        return None
 
 
-# Backward compatibility alias
-ApiKeyValidator = BearerTokenValidator
-
-# Global validator instance
-_validator: Optional[BearerTokenValidator] = None
-
-
-def get_validator() -> BearerTokenValidator:
-    """Get the global bearer token validator instance."""
-    global _validator
-    if _validator is None:
-        _validator = BearerTokenValidator()
-    return _validator
-
-
-def validate_request(context: Context) -> None:
-    """
-    Validate the bearer token from the request context.
-
-    This function should be called at the beginning of each tool handler
-    to ensure the request is authenticated.
-
-    Args:
-        context: The MCP request context
-
-    Raises:
-        AuthenticationError: If authentication fails
-    """
-    validator = get_validator()
-
-    # Extract bearer token from context metadata/headers
-    # FastMCP passes headers in context.metadata
-    token = None
-    if hasattr(context, "metadata") and context.metadata:
-        auth_header = (
-            context.metadata.get("authorization")
-            or context.metadata.get("Authorization")
-        )
-
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header[7:]  # Remove "Bearer " prefix
-
-    validator.require_valid_token(token)
+# Keep the old name around so existing imports don't break.
+BearerTokenValidator = McpBearerTokenVerifier
+ApiKeyValidator = McpBearerTokenVerifier
