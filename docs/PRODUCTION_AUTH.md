@@ -66,7 +66,7 @@ gcloud api-gateway gateways create mcp-gateway \
   --location=us-central1
 
 # 3. Clients use gateway URL with API key
-curl -H "X-API-Key: abc123" https://mcp-gateway-xxx.apigateway.dev/mcp/tools
+curl -H "Authorization: Bearer abc123" https://mcp-gateway-xxx.apigateway.dev/mcp/tools
 ```
 
 **Pros:**
@@ -93,8 +93,8 @@ Client → Caddy/nginx → Cloud Run → Backend API
 ```caddy
 mcp.example.com {
     @unauthorized {
-        not header X-API-Key mcp_key1
-        not header X-API-Key mcp_key2
+        not header Authorization "Bearer mcp_key1"
+        not header Authorization "Bearer mcp_key2"
     }
 
     respond @unauthorized 401 {
@@ -176,7 +176,7 @@ COPY Caddyfile /etc/caddy/Caddyfile
 # Caddyfile
 :8080 {
     @unauthorized {
-        not header X-API-Key {$MCP_API_KEYS}
+        not header Authorization "Bearer {$MCP_API_KEYS}"
     }
 
     respond @unauthorized 401

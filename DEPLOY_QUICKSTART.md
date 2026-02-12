@@ -44,8 +44,8 @@ SERVICE_URL=$(gcloud run services describe tm-mcp-server --region us-central1 --
 # Test health check
 curl $SERVICE_URL/health
 
-# Test with API key (replace with your key)
-curl -H "X-API-Key: mcp_xxx" $SERVICE_URL/mcp/tools
+# Test with bearer token (replace with your token)
+curl -H "Authorization: Bearer mcp_xxx" $SERVICE_URL/mcp/tools
 ```
 
 ## Configure MCP Client
@@ -59,7 +59,7 @@ curl -H "X-API-Key: mcp_xxx" $SERVICE_URL/mcp/tools
       "transport": {
         "type": "http",
         "headers": {
-          "X-API-Key": "mcp_your_key_here"
+          "Authorization": "Bearer mcp_your_key_here"
         }
       }
     }

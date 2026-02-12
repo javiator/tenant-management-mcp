@@ -255,7 +255,7 @@ SERVICE_URL=$(gcloud run services describe tm-mcp-server \
 curl $SERVICE_URL/health
 
 # Test with authentication
-curl -H "X-API-Key: mcp_xxx" $SERVICE_URL/mcp/tools
+curl -H "Authorization: Bearer mcp_xxx" $SERVICE_URL/mcp/tools
 ```
 
 ### View Logs

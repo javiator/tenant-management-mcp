@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # MCP Server authentication
     mcp_api_keys: str = Field(
         default="",
-        description="Comma-separated list of valid API keys for MCP client authentication.",
+        description="Comma-separated list of valid bearer tokens for MCP client authentication via Authorization header.",
     )
 
     @field_validator("backend_mcp_base_url")

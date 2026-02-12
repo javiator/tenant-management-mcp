@@ -6,7 +6,7 @@ import logging
 
 from mcp.server.fastmcp import FastMCP
 
-from .auth import ApiKeyValidator
+from .auth import BearerTokenValidator
 from .tools import register_all_tools
 
 logger = logging.getLogger(__name__)
@@ -22,15 +22,15 @@ def build_server(*, host: str | None = None, port: int | None = None) -> FastMCP
     )
 
     # Initialize authentication validator
-    validator = ApiKeyValidator()
+    validator = BearerTokenValidator()
     if validator.is_authentication_enabled():
         logger.info(
-            "Authentication enabled with %d configured API keys",
-            len(validator._allowed_keys),
+            "Bearer token authentication enabled with %d configured tokens",
+            len(validator._allowed_tokens),
         )
     else:
         logger.warning(
-            "Authentication DISABLED - no API keys configured. "
+            "Authentication DISABLED - no bearer tokens configured. "
             "Set MCP_API_KEYS environment variable to enable authentication."
         )
 

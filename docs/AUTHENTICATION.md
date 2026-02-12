@@ -1,10 +1,10 @@
 # Authentication Guide
 
-Complete guide to API key authentication in the TM MCP Server.
+Complete guide to bearer token authentication in the TM MCP Server.
 
 ## Overview
 
-The TM MCP Server supports API key authentication to ensure only authorized clients can access your tenant management data.
+The TM MCP Server supports bearer token authentication using the industry-standard `Authorization: Bearer <token>` header to ensure only authorized clients can access your tenant management data.
 
 ### Security Model
 
@@ -13,12 +13,12 @@ The TM MCP Server supports API key authentication to ensure only authorized clie
 │   Client    │
 │ (Claude AI) │
 └──────┬──────┘
-       │ X-API-Key: mcp_xxx
+       │ Authorization: Bearer mcp_xxx
        ↓
 ┌─────────────────────┐
 │  MCP Server         │
 │  ┌───────────────┐  │
-│  │ Auth Middleware│  │ ← Validates API key
+│  │ Auth Middleware│  │ ← Validates bearer token
 │  └───────┬───────┘  │
 │          ↓          │
 │  ┌───────────────┐  │
@@ -35,7 +35,7 @@ The TM MCP Server supports API key authentication to ensure only authorized clie
 ```
 
 **Two layers of authentication:**
-1. **MCP Layer:** Client → MCP Server (API keys)
+1. **MCP Layer:** Client → MCP Server (bearer tokens)
 2. **Backend Layer:** MCP Server → Backend API (bearer token)
 
 ---
@@ -47,8 +47,8 @@ The TM MCP Server supports API key authentication to ensure only authorized clie
 ```bash
 # .env file
 
-# MCP Server Authentication (comma-separated API keys)
-MCP_API_KEYS=mcp_key1,mcp_key2,mcp_key3
+# MCP Server Authentication (comma-separated bearer tokens)
+MCP_API_KEYS=mcp_token1,mcp_token2,mcp_token3
 
 # Backend API Authentication (MCP → Backend)
 BACKEND_MCP_API_TOKEN=your_backend_token
@@ -59,7 +59,7 @@ BACKEND_MCP_API_TOKEN=your_backend_token
 | MCP_API_KEYS | Behavior |
 |--------------|----------|
 | Not set (empty) | ⚠️ **Authentication DISABLED** - All requests allowed (dev mode) |
-| Set with keys | ✅ **Authentication ENABLED** - Only valid keys allowed |
+| Set with tokens | ✅ **Authentication ENABLED** - Only valid tokens allowed |
 
 ---
 
@@ -67,10 +67,10 @@ BACKEND_MCP_API_TOKEN=your_backend_token
 
 ### HTTP Transport (Claude Desktop, Cursor, etc.)
 
-Clients must include the API key in the `X-API-Key` header:
+Clients must include the token in the `Authorization` header using the Bearer scheme:
 
 ```bash
-curl -H "X-API-Key: mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q" \
+curl -H "Authorization: Bearer mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q" \
      -H "Content-Type: application/json" \
      https://your-mcp-server.run.app/mcp/tools
 ```
@@ -86,7 +86,7 @@ curl -H "X-API-Key: mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q" \
       "transport": {
         "type": "http",
         "headers": {
-          "X-API-Key": "mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q"
+          "Authorization": "Bearer mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q"
         }
       }
     }
@@ -102,7 +102,7 @@ curl -H "X-API-Key: mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q" \
       "name": "tenant-management",
       "url": "https://your-mcp-server.run.app",
       "headers": {
-        "X-API-Key": "mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q"
+        "Authorization": "Bearer mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q"
       }
     }
   ]
@@ -116,12 +116,12 @@ curl -H "X-API-Key: mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q" \
 ### Successful Request
 
 ```
-1. Client sends request with X-API-Key header
+1. Client sends request with Authorization: Bearer <token> header
    ↓
-2. MCP Server extracts key from header
+2. MCP Server extracts token from Authorization header
    ↓
-3. Server validates key against MCP_API_KEYS
-   ✅ Key found in allowed list
+3. Server validates token against MCP_API_KEYS
+   ✅ Token found in allowed list
    ↓
 4. Request passes to MCP tools
    ↓
@@ -133,17 +133,17 @@ curl -H "X-API-Key: mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q" \
 ### Failed Authentication
 
 ```
-1. Client sends request (missing or invalid key)
+1. Client sends request (missing or invalid token)
    ↓
-2. MCP Server extracts key from header
+2. MCP Server checks Authorization header
    ↓
-3. Server validates key against MCP_API_KEYS
-   ❌ Key NOT found in allowed list
+3. Server validates token against MCP_API_KEYS
+   ❌ Token NOT found in allowed list
    ↓
 4. Server returns 401 Unauthorized
    {
      "error": "Unauthorized",
-     "message": "Invalid or missing API key. Provide X-API-Key header."
+     "message": "Missing or invalid bearer token. Provide Authorization: Bearer <token> header."
    }
 ```
 
@@ -154,21 +154,21 @@ curl -H "X-API-Key: mcp_xqi4g228BUiXAJ5P9M5BBFQAmej9XtgY5Qol38zoG_Q" \
 ### Local Testing
 
 ```bash
-# 1. Generate test keys
+# 1. Generate test tokens
 uv run python scripts/manage_keys.py generate --name "Test User"
 
-# 2. Export keys to environment
+# 2. Export tokens to environment
 export MCP_API_KEYS=$(uv run python scripts/manage_keys.py export)
 
 # 3. Start server with authentication
 uv run tm-mcp --transport streamable-http --host 127.0.0.1 --port 8000
 
-# 4. Test without key (should fail)
+# 4. Test without token (should fail)
 curl http://127.0.0.1:8000/mcp/tools
 # Expected: 401 Unauthorized
 
-# 5. Test with valid key (should succeed)
-curl -H "X-API-Key: mcp_xxx" http://127.0.0.1:8000/mcp/tools
+# 5. Test with valid token (should succeed)
+curl -H "Authorization: Bearer mcp_xxx" http://127.0.0.1:8000/mcp/tools
 # Expected: 200 OK
 ```
 
@@ -181,19 +181,19 @@ Run the test script:
 ```
 
 This tests:
-- ❌ No API key → 401
-- ❌ Invalid API key → 401
-- ✅ Valid API key → 200
+- ❌ No bearer token → 401
+- ❌ Invalid bearer token → 401
+- ✅ Valid bearer token → 200
 - ✅ Health check (no auth required) → 200
 
 ---
 
 ## Production Deployment
 
-### Step 1: Generate Keys
+### Step 1: Generate Tokens
 
 ```bash
-# Generate keys for your users/teams
+# Generate tokens for your users/teams
 uv run python scripts/manage_keys.py generate --name "Team Alpha"
 uv run python scripts/manage_keys.py generate --name "Team Beta"
 uv run python scripts/manage_keys.py generate --name "Production Service"
@@ -202,11 +202,11 @@ uv run python scripts/manage_keys.py generate --name "Production Service"
 ### Step 2: Upload to GCP Secret Manager
 
 ```bash
-# Sync all active keys to GCP
+# Sync all active tokens to GCP
 uv run python scripts/manage_keys.py sync-to-gcp
 ```
 
-This creates/updates the `mcp-api-keys` secret with comma-separated keys.
+This creates/updates the `mcp-api-keys` secret with comma-separated tokens.
 
 ### Step 3: Deploy Cloud Run with Secrets
 
@@ -219,12 +219,12 @@ gcloud run deploy tm-mcp-server \
 ### Step 4: Verify Authentication
 
 ```bash
-# Test without key (should fail)
+# Test without token (should fail)
 curl https://your-mcp-server.run.app/mcp/tools
 # Expected: 401
 
-# Test with valid key (should succeed)
-curl -H "X-API-Key: mcp_xxx" https://your-mcp-server.run.app/mcp/tools
+# Test with valid token (should succeed)
+curl -H "Authorization: Bearer mcp_xxx" https://your-mcp-server.run.app/mcp/tools
 # Expected: 200
 ```
 
@@ -254,19 +254,19 @@ This allows load balancers and monitoring systems to check server health.
 ### ✅ DO
 
 - **Use HTTPS in production** - Cloud Run provides this automatically
-- **Rotate keys regularly** - Every 90 days for users, 180 for services
-- **Generate cryptographically secure keys** - Use the provided script
-- **Store keys in Secret Manager** - Never in code or logs
-- **Use separate keys per user/team** - Enables granular revocation
+- **Rotate tokens regularly** - Every 90 days for users, 180 for services
+- **Generate cryptographically secure tokens** - Use the provided script
+- **Store tokens in Secret Manager** - Never in code or logs
+- **Use separate tokens per user/team** - Enables granular revocation
 - **Monitor authentication failures** - Check Cloud Run logs
-- **Revoke keys immediately on compromise** - Then sync to GCP
+- **Revoke tokens immediately on compromise** - Then sync to GCP
 
 ### ❌ DON'T
 
-- **Don't commit keys to git** - `.keys.json` is git-ignored
-- **Don't share keys in plain text** - Use 1Password/LastPass
-- **Don't use the same key everywhere** - One key per user/team
-- **Don't log API keys** - The middleware doesn't log keys
+- **Don't commit tokens to git** - `.keys.json` is git-ignored
+- **Don't share tokens in plain text** - Use 1Password/LastPass
+- **Don't use the same token everywhere** - One token per user/team
+- **Don't log bearer tokens** - The middleware doesn't log tokens
 - **Don't disable auth in production** - Only for local development
 
 ---
@@ -285,47 +285,47 @@ This allows load balancers and monitoring systems to check server health.
 echo $MCP_API_KEYS
 
 # Set it
-export MCP_API_KEYS="mcp_key1,mcp_key2"
+export MCP_API_KEYS="mcp_token1,mcp_token2"
 
 # Or add to .env file
-echo "MCP_API_KEYS=mcp_key1,mcp_key2" >> .env
+echo "MCP_API_KEYS=mcp_token1,mcp_token2" >> .env
 ```
 
 ---
 
-### "401 Unauthorized" with Valid Key
+### "401 Unauthorized" with Valid Token
 
-**Problem:** Client gets 401 even with correct key
+**Problem:** Client gets 401 even with correct token
 
 **Causes & Solutions:**
 
-1. **Key not in MCP_API_KEYS**
+1. **Token not in MCP_API_KEYS**
    ```bash
-   # Verify key is in the list
-   echo $MCP_API_KEYS | grep "your_key"
+   # Verify token is in the list
+   echo $MCP_API_KEYS | grep "your_token"
    ```
 
-2. **Typo in key**
+2. **Typo in token**
    ```bash
-   # Get the exact key from storage
+   # Get the exact token from storage
    uv run python scripts/manage_keys.py show <key_id>
    ```
 
-3. **Wrong header name**
-   - Must be `X-API-Key` (case-insensitive)
-   - NOT `Authorization`, `Api-Key`, etc.
+3. **Wrong header format**
+   - Must be `Authorization: Bearer <token>`
+   - NOT `X-API-Key`, `Api-Key`, or bare `Authorization` without Bearer prefix
 
-4. **Key was revoked**
+4. **Token was revoked**
    ```bash
-   # Check if key is still active
+   # Check if token is still active
    uv run python scripts/manage_keys.py list
    ```
 
 ---
 
-### "Server not using updated keys"
+### "Server not using updated tokens"
 
-**Problem:** Updated keys in Secret Manager but server still uses old keys
+**Problem:** Updated tokens in Secret Manager but server still uses old tokens
 
 **Solution:** Cloud Run needs to be redeployed or restarted to pick up new secret versions
 
@@ -356,20 +356,20 @@ gcloud logging read "resource.type=cloud_run_revision AND \
 ### Metrics to Track
 
 - **401 error rate** - High rate = possible attack or misconfigured clients
-- **API key usage** - Which keys are being used
+- **Token usage** - Which tokens are being used
 - **Geographic distribution** - Where requests come from
 
 ---
 
-## Key Rotation Process
+## Token Rotation Process
 
 ### Scheduled Rotation (Every 90 days)
 
 ```bash
-# 1. Generate new key for user
+# 1. Generate new token for user
 uv run python scripts/manage_keys.py generate --name "Alice Smith (2026-Q2)"
 
-# 2. Share new key with user securely
+# 2. Share new token with user securely
 # (via 1Password, encrypted email, etc.)
 
 # 3. Sync to GCP
@@ -377,7 +377,7 @@ uv run python scripts/manage_keys.py sync-to-gcp
 
 # 4. Wait for user to confirm they've updated their config
 
-# 5. Revoke old key
+# 5. Revoke old token
 uv run python scripts/manage_keys.py revoke <old_key_id>
 
 # 6. Sync to GCP again
@@ -387,13 +387,13 @@ uv run python scripts/manage_keys.py sync-to-gcp
 ### Emergency Rotation (Compromise)
 
 ```bash
-# 1. Immediately revoke compromised key
+# 1. Immediately revoke compromised token
 uv run python scripts/manage_keys.py revoke <compromised_key_id>
 
 # 2. Sync to GCP (takes effect immediately)
 uv run python scripts/manage_keys.py sync-to-gcp
 
-# 3. Generate new key
+# 3. Generate new token
 uv run python scripts/manage_keys.py generate --name "Alice Smith (emergency)"
 
 # 4. Share securely with user
@@ -401,7 +401,7 @@ uv run python scripts/manage_keys.py generate --name "Alice Smith (emergency)"
 # 5. Sync to GCP
 uv run python scripts/manage_keys.py sync-to-gcp
 
-# 6. Check logs for unauthorized usage of old key
+# 6. Check logs for unauthorized usage of old token
 gcloud logging read "jsonPayload.message=~'Unauthorized access attempt'"
 ```
 
@@ -411,22 +411,23 @@ gcloud logging read "jsonPayload.message=~'Unauthorized access attempt'"
 
 ### Code Structure
 
-- **[src/tm_mcp/auth.py](../src/tm_mcp/auth.py)** - API key validation logic
-- **[src/tm_mcp/server.py](../src/tm_mcp/server.py:46-67)** - Starlette middleware integration
-- **[src/tm_mcp/config.py](../src/tm_mcp/config.py:30-34)** - MCP_API_KEYS configuration
+- **[src/tm_mcp/auth.py](../src/tm_mcp/auth.py)** - Bearer token validation logic
+- **[src/tm_mcp/server.py](../src/tm_mcp/server.py)** - Starlette middleware integration
+- **[src/tm_mcp/config.py](../src/tm_mcp/config.py)** - MCP_API_KEYS configuration
 
 ### How Validation Works
 
 ```python
-# 1. Keys loaded from environment on server start
+# 1. Tokens loaded from environment on server start
 MCP_API_KEYS = os.environ.get("MCP_API_KEYS", "")
-allowed_keys = set(MCP_API_KEYS.split(","))
+allowed_tokens = set(MCP_API_KEYS.split(","))
 
-# 2. Each request extracts X-API-Key header
-api_key = request.headers.get("X-API-Key")
+# 2. Each request extracts Authorization header
+auth_header = request.headers.get("Authorization")
+token = auth_header.removeprefix("Bearer ")
 
-# 3. Key checked against allowed set (O(1) lookup)
-if api_key not in allowed_keys:
+# 3. Token checked against allowed set (O(1) lookup)
+if token not in allowed_tokens:
     return 401 Unauthorized
 ```
 
@@ -453,31 +454,31 @@ unset MCP_API_KEYS
 uv run tm-mcp --transport streamable-http
 ```
 
-### Q: How many keys can I have?
+### Q: How many tokens can I have?
 
-A: No hard limit, but Secret Manager has a 64KB limit per secret (~500-1000 keys).
+A: No hard limit, but Secret Manager has a 64KB limit per secret (~500-1000 tokens).
 
-### Q: Can I use the same key on multiple clients?
+### Q: Can I use the same token on multiple clients?
 
-A: Yes, but not recommended. Use separate keys per user/team for better security and audit trails.
+A: Yes, but not recommended. Use separate tokens per user/team for better security and audit trails.
 
-### Q: What if a user loses their key?
+### Q: What if a user loses their token?
 
 A: Use the show command to retrieve it:
 ```bash
 uv run python scripts/manage_keys.py show <key_id>
 ```
 
-### Q: Can I use bearer tokens instead of X-API-Key?
+### Q: Why Authorization: Bearer instead of X-API-Key?
 
-A: Yes, the middleware also accepts `Authorization: Bearer <token>` header.
+A: `Authorization: Bearer` is the industry-standard authentication header defined in [RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750). It is widely supported by HTTP clients, proxies, API gateways, and security tooling out of the box.
 
 ---
 
 ## Next Steps
 
-1. ✅ Generate keys for your users: [KEY_MANAGEMENT.md](KEY_MANAGEMENT.md)
+1. ✅ Generate tokens for your users: [KEY_MANAGEMENT.md](KEY_MANAGEMENT.md)
 2. ✅ Test authentication locally: `./test_auth.sh`
 3. ✅ Deploy to Cloud Run with secrets
-4. ✅ Configure MCP clients with keys
+4. ✅ Configure MCP clients with bearer tokens
 5. ✅ Set up monitoring and alerts

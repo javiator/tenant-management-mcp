@@ -26,7 +26,7 @@ End-to-end guide for hosting the TM MCP Server on Google Cloud Platform with aut
 │   AI Clients     │
 │ Claude, Cursor   │
 └────────┬─────────┘
-         │ HTTPS + X-API-Key
+         │ HTTPS + Authorization: Bearer
          ↓
 ┌──────────────────────────────────┐
 │   Google Cloud Platform          │
@@ -39,7 +39,7 @@ End-to-end guide for hosting the TM MCP Server on Google Cloud Platform with aut
 │  ┌────────────────────────────┐ │
 │  │  Cloud Run Service         │ │
 │  │  - TM MCP Server           │ │
-│  │  - API key auth            │ │
+│  │  - Bearer token auth        │ │
 │  │  - Auto-scaling            │ │
 │  └─────────────┬──────────────┘ │
 │                ↓                 │
@@ -84,9 +84,9 @@ End-to-end guide for hosting the TM MCP Server on Google Cloud Platform with aut
 ### Authentication Flow
 
 ```
-1. Client → Request with X-API-Key header
+1. Client → Request with Authorization: Bearer <token> header
 2. Cloud Run → Reads MCP_API_KEYS from Secret Manager
-3. Middleware → Validates API key
+3. Middleware → Validates bearer token
 4. If valid → Pass to MCP tools
 5. MCP Server → Calls backend with BACKEND_MCP_API_TOKEN
 6. Backend → Returns data
@@ -220,9 +220,9 @@ SERVICE_URL=$(gcloud run services describe tm-mcp-server \
 # Health check
 curl $SERVICE_URL/health
 
-# With API key
+# With bearer token
 API_KEY=$(uv run python scripts/manage_keys.py export | cut -d',' -f1)
-curl -H "X-API-Key: $API_KEY" $SERVICE_URL/mcp/tools
+curl -H "Authorization: Bearer $API_KEY" $SERVICE_URL/mcp/tools
 ```
 
 ---

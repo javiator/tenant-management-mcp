@@ -210,14 +210,14 @@ curl $SERVICE_URL/health
 
 **Expected:** 404 (FastMCP doesn't have /health endpoint, but shows server responds)
 
-### Test 2: With API Key
+### Test 2: With Bearer Token
 
 ```bash
-# Get first API key
+# Get first bearer token
 API_KEY=$(uv run python scripts/manage_keys.py export | cut -d',' -f1)
 
 # Test MCP endpoint (will return 404 but shows auth is working)
-curl -H "X-API-Key: $API_KEY" $SERVICE_URL/
+curl -H "Authorization: Bearer $API_KEY" $SERVICE_URL/
 ```
 
 ### Test 3: View Logs
@@ -248,7 +248,7 @@ Edit `~/.config/claude/claude_desktop_config.json`:
       "transport": {
         "type": "http",
         "headers": {
-          "X-API-Key": "YOUR_API_KEY"
+          "Authorization": "Bearer YOUR_API_KEY"
         }
       }
     }
@@ -258,7 +258,7 @@ Edit `~/.config/claude/claude_desktop_config.json`:
 
 Replace:
 - `YOUR_SERVICE_URL` with your Cloud Run URL
-- `YOUR_API_KEY` with one of your generated keys
+- `YOUR_API_KEY` with one of your generated tokens
 
 ### Cursor
 
@@ -271,7 +271,7 @@ Edit `.cursor/mcp.json`:
       "name": "tenant-management",
       "url": "YOUR_SERVICE_URL",
       "headers": {
-        "X-API-Key": "YOUR_API_KEY"
+        "Authorization": "Bearer YOUR_API_KEY"
       }
     }
   ]

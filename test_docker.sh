@@ -132,7 +132,7 @@ if [ -n "$TEST_KEY" ]; then
 
     # With key (should succeed)
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-        -H "X-API-Key: $TEST_KEY" \
+        -H "Authorization: Bearer $TEST_KEY" \
         http://localhost:$PORT/mcp/tools)
     if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "204" ]; then
         echo -e "${GREEN}✅ Accepts requests with valid API key${NC}"
@@ -156,7 +156,7 @@ echo ""
 echo "Access server:"
 echo "  curl http://localhost:$PORT/health"
 if [ -n "$TEST_KEY" ]; then
-    echo "  curl -H \"X-API-Key: $TEST_KEY\" http://localhost:$PORT/mcp/tools"
+    echo "  curl -H \"Authorization: Bearer $TEST_KEY\" http://localhost:$PORT/mcp/tools"
 fi
 echo ""
 

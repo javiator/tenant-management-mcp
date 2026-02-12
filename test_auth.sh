@@ -66,10 +66,10 @@ else
 fi
 echo ""
 
-# Test 2: Invalid API key (should fail)
-echo "Test 2: Request with invalid API key (should fail with 401)"
+# Test 2: Invalid bearer token (should fail)
+echo "Test 2: Request with invalid bearer token (should fail with 401)"
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "X-API-Key: invalid_key_12345" \
+    -H "Authorization: Bearer invalid_key_12345" \
     http://127.0.0.1:8888/mcp/tools)
 if [ "$HTTP_CODE" = "401" ]; then
     echo "✅ Test 2 PASSED - Got 401 Unauthorized"
@@ -78,10 +78,10 @@ else
 fi
 echo ""
 
-# Test 3: Valid API key (should succeed)
-echo "Test 3: Request with valid API key (should succeed)"
+# Test 3: Valid bearer token (should succeed)
+echo "Test 3: Request with valid bearer token (should succeed)"
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "X-API-Key: $VALID_KEY" \
+    -H "Authorization: Bearer $VALID_KEY" \
     http://127.0.0.1:8888/mcp/tools)
 if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "204" ]; then
     echo "✅ Test 3 PASSED - Got $HTTP_CODE (authenticated)"

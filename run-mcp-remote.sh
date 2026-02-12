@@ -46,5 +46,5 @@ echo "Connecting to: $MCP_REMOTE_URL" >&2
 
 # Use --quiet and --no-progress to ensure NO output on stdout except MCP JSON
 exec "$UV_BIN" run --quiet --no-progress mcp-proxy \
-    --headers X-API-Key "$MCP_API_KEY" \
+    --headers Authorization "Bearer $MCP_API_KEY" \
     "$MCP_REMOTE_URL" "$@"

@@ -47,7 +47,7 @@ python scripts/manage_keys.py sync-to-gcp
       "transport": {
         "type": "http",
         "headers": {
-          "X-API-Key": "mcp_vXY7Kp9Lm3Qr8Wz4Nt6Jh2Fg5Cd1As0"
+          "Authorization": "Bearer mcp_vXY7Kp9Lm3Qr8Wz4Nt6Jh2Fg5Cd1As0"
         }
       }
     }
@@ -57,7 +57,7 @@ python scripts/manage_keys.py sync-to-gcp
 
 **For testing with curl:**
 ```bash
-curl -H "X-API-Key: mcp_vXY7Kp9Lm3Qr8Wz4Nt6Jh2Fg5Cd1As0" \
+curl -H "Authorization: Bearer mcp_vXY7Kp9Lm3Qr8Wz4Nt6Jh2Fg5Cd1As0" \
      https://your-mcp-server.run.app/health
 ```
 

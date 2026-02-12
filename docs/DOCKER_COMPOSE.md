@@ -62,7 +62,7 @@ docker-compose ps
 curl http://localhost:8000/health
 
 # With API key (if configured)
-curl -H "X-API-Key: mcp_xxx" http://localhost:8000/
+curl -H "Authorization: Bearer mcp_xxx" http://localhost:8000/
 ```
 
 ### 5. Stop
@@ -569,7 +569,7 @@ EOF
 docker-compose up -d
 
 # Test (will require API key)
-curl -H "X-API-Key: $(echo $API_KEYS | cut -d',' -f1)" http://localhost:8000/
+curl -H "Authorization: Bearer $(echo $API_KEYS | cut -d',' -f1)" http://localhost:8000/
 ```
 
 ### Example 3: Development with Code Mounting
