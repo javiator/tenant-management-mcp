@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+# Load .env file if it exists
+if [ -f .env ]; then
+    # Load variables while ignoring comments
+    export $(grep -v '^#' .env | xargs)
+fi
+
 # Configuration
 # Can be overridden by environment variables
 DEFAULT_URL="http://localhost:8000/sse"
