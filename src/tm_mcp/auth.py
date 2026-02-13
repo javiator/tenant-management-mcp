@@ -72,8 +72,8 @@ class BearerTokenMiddleware:
                 await self.app(scope, receive, send)
                 return
 
-        # GET requests are SSE notification streams — allow through so
-        # the client can receive server-initiated messages.
+        # GET /mcp is the streamable-http notification stream — allow
+        # through so the client can receive server-initiated messages.
         if request.method == "GET":
             await self.app(scope, receive, send)
             return
