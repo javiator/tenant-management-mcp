@@ -48,8 +48,8 @@ EXPOSE 8000
 
 # Health check (optional but recommended)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD python -c "import httpx; httpx.get('http://localhost:8000/sse', timeout=2)" || exit 1
+  CMD python -c "import httpx; httpx.get('http://localhost:8000/mcp', timeout=2)" || exit 1
 
-# Run the MCP server with sse transport
+# Run the MCP server with streamable-http transport
 # Cloud Run will inject PORT environment variable (defaults to 8000)
-CMD ["uv", "run", "tm-mcp", "--transport", "sse", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "tm-mcp", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000"]
