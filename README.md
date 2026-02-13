@@ -24,8 +24,8 @@ uv run tm-mcp --transport streamable-http --host 0.0.0.0 --port 8000
 ```
 
 > **Note:** The default `stdio` transport is designed for MCP-compatible clients that spawn the
-> server as a child process. Use the HTTP or SSE transports when you need a long-running server for
-> manual testing.
+> server as a child process. Use the `streamable-http` transport when you need a long-running server
+> for manual testing or remote deployments.
 
 During development you can also run `uv run python -m tm_mcp` or attach a debugger to the module entry point.
 
@@ -60,7 +60,7 @@ uv run tm-mcp --transport streamable-http
 - [Key Management Guide](docs/KEY_MANAGEMENT.md) - Managing API keys
 - [Quick Start: Keys](docs/QUICK_START_KEYS.md) - 5-minute quick start
 
-**Note:** Authentication is only enforced on HTTP/SSE transports. Leave `MCP_API_KEYS` empty for local development without authentication.
+**Note:** Authentication is only enforced on HTTP transports (`streamable-http`). Leave `MCP_API_KEYS` empty for local development without authentication.
 
 ## Tool Catalogue
 

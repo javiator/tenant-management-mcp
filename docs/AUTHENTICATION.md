@@ -435,11 +435,11 @@ if token not in allowed_tokens:
 
 | Transport | Auth Support | Notes |
 |-----------|--------------|-------|
-| `streamable-http` | ✅ Full support | Starlette middleware |
-| `sse` | ✅ Full support | Starlette middleware |
+| `streamable-http` | ✅ Full support | Recommended. Starlette middleware |
+| `sse` | ✅ Full support | Deprecated — use `streamable-http` instead |
 | `stdio` | ⚠️ Limited | No HTTP headers in stdio mode |
 
-**Note:** For `stdio` transport, authentication is handled by the parent process spawning the MCP server.
+**Note:** For `stdio` transport, authentication is handled by the parent process spawning the MCP server. The `sse` transport is deprecated in the MCP spec — use `streamable-http` for all new deployments.
 
 ---
 
