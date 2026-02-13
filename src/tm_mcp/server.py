@@ -64,21 +64,21 @@ def run(
         return JSONResponse({"status": "ok"})
 
     # Wrap with bearer-token middleware when tokens are configured
-    # if is_authentication_enabled():
-    #     allowed_tokens = get_allowed_tokens()
-    #     logger.info(
-    #         "Bearer token authentication enabled with %d configured tokens",
-    #         len(allowed_tokens),
-    #     )
-    #     starlette_app = BearerTokenMiddleware(
-    #         starlette_app,
-    #         allowed_tokens=allowed_tokens,
-    #     )
-    # else:
-    #     logger.warning(
-    #         "Authentication DISABLED - no bearer tokens configured. "
-    #         "Set MCP_API_KEYS environment variable to enable authentication."
-    #     )
+    if is_authentication_enabled():
+        allowed_tokens = get_allowed_tokens()
+        logger.info(
+            "Bearer token authentication enabled with %d configured tokens",
+            len(allowed_tokens),
+        )
+        starlette_app = BearerTokenMiddleware(
+            starlette_app,
+            allowed_tokens=allowed_tokens,
+        )
+    else:
+        logger.warning(
+            "Authentication DISABLED - no bearer tokens configured. "
+            "Set MCP_API_KEYS environment variable to enable authentication."
+        )
 
     config = uvicorn.Config(
         starlette_app,
