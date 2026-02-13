@@ -82,23 +82,23 @@ class TenantCreate(TenantBase):
 
 class TenantUpdate(TenantBase):
     @model_validator(mode="after")
-    def ensure_at_least_one_field(cls, model: "TenantUpdate") -> "TenantUpdate":
-        payload = model.model_dump(exclude_none=True)
+    def ensure_at_least_one_field(self) -> "TenantUpdate":
+        payload = self.model_dump(exclude_none=True)
         if not payload:
             raise ValueError("At least one field must be provided to update a tenant.")
-        return model
+        return self
 
 
 class TenantUpdatePayload(TenantUpdate):
     id: PositiveInt
 
     @model_validator(mode="after")
-    def ensure_fields_present(cls, model: "TenantUpdatePayload") -> "TenantUpdatePayload":
-        payload = model.model_dump(exclude_none=True)
+    def ensure_fields_present(self) -> "TenantUpdatePayload":
+        payload = self.model_dump(exclude_none=True)
         payload.pop("id", None)
         if not payload:
             raise ValueError("At least one field must be provided to update a tenant.")
-        return model
+        return self
 
 
 class Transaction(BaseModel):
@@ -140,23 +140,23 @@ class TransactionUpdate(BaseModel):
     comments: Optional[str] = None
 
     @model_validator(mode="after")
-    def ensure_at_least_one_field(cls, model: "TransactionUpdate") -> "TransactionUpdate":
-        payload = model.model_dump(exclude_none=True)
+    def ensure_at_least_one_field(self) -> "TransactionUpdate":
+        payload = self.model_dump(exclude_none=True)
         if not payload:
             raise ValueError("At least one field must be provided to update a transaction.")
-        return model
+        return self
 
 
 class TransactionUpdatePayload(TransactionUpdate):
     id: PositiveInt
 
     @model_validator(mode="after")
-    def ensure_fields_present(cls, model: "TransactionUpdatePayload") -> "TransactionUpdatePayload":
-        payload = model.model_dump(exclude_none=True)
+    def ensure_fields_present(self) -> "TransactionUpdatePayload":
+        payload = self.model_dump(exclude_none=True)
         payload.pop("id", None)
         if not payload:
             raise ValueError("At least one field must be provided to update a transaction.")
-        return model
+        return self
 
 
 class TransactionType(str, Enum):

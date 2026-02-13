@@ -24,8 +24,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Create non-root user for security
 RUN useradd -m -u 1000 mcpuser && \
-    mkdir -p /app && \
-    chown -R mcpuser:mcpuser /app
+  mkdir -p /app && \
+  chown -R mcpuser:mcpuser /app
 
 # Set working directory
 WORKDIR /app
@@ -48,7 +48,7 @@ EXPOSE 8000
 
 # Health check (optional but recommended)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD python -c "import httpx; httpx.get('http://localhost:8000/mcp', timeout=2)" || exit 1
+  CMD python -c "import httpx; httpx.get('http://localhost:8000/health', timeout=2)" || exit 1
 
 # Run the MCP server with streamable-http transport
 # Cloud Run will inject PORT environment variable (defaults to 8000)
