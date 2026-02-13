@@ -31,10 +31,22 @@ def _load_tokens_from_env() -> Set[str]:
 class BearerTokenMiddleware:
     """ASGI middleware that enforces ``Authorization: Bearer <token>`` on /mcp routes.
 
+    The MCP protocol handshake (``initialize``, ``notifications/initialized``)
+    is allowed through without a token so that clients can establish a session
+    without being tricked into an OAuth discovery flow.  All other JSON-RPC
+    methods (``tools/list``, ``tools/call``, etc.) require a valid bearer token.
+
     Non-MCP paths (health checks, etc.) pass through without authentication.
-    The 401 response is a plain JSON body — no ``WWW-Authenticate`` OAuth
-    challenge, so MCP clients won't attempt an OAuth discovery flow.
+    The 401 response is a plain JSON body — no ``WWW-Authenticate`` header — so
+    MCP clients won't attempt an OAuth discovery flow.
     """
+
+    # JSON-RPC methods that are allowed without a bearer token.
+    _OPEN_METHODS = frozenset({
+        "initialize",
+        "notifications/initialized",
+        "ping",
+    })
 
     def __init__(self, app: ASGIApp, *, allowed_tokens: Set[str]) -> None:
         self.app = app
@@ -47,30 +59,96 @@ class BearerTokenMiddleware:
 
         request = Request(scope)
 
-        # Only protect the /mcp endpoint
+        # Non-MCP paths pass through (health checks, etc.)
         if not request.url.path.startswith("/mcp"):
             await self.app(scope, receive, send)
             return
 
+        # If a valid bearer token is present, let everything through.
         auth_header = request.headers.get("authorization", "")
-        if not auth_header.lower().startswith("bearer "):
+        if auth_header.lower().startswith("bearer "):
+            token = auth_header[7:]
+            if token in self._allowed_tokens:
+                await self.app(scope, receive, send)
+                return
+
+        # GET requests are SSE notification streams — allow through so
+        # the client can receive server-initiated messages.
+        if request.method == "GET":
+            await self.app(scope, receive, send)
+            return
+
+        # For POST requests without a valid token, read the body and check
+        # whether the JSON-RPC method is part of the MCP handshake.
+        if request.method == "POST":
+            body = await self._buffer_body(receive)
+
+            if self._is_open_request(body):
+                await self.app(scope, self._replay_receive(body), send)
+                return
+
+            # Not an open method and no valid token → reject.
             await self._send_error(
                 send,
                 status_code=401,
-                message="Missing bearer token. Provide Authorization: Bearer <token> header.",
+                message="Missing or invalid bearer token. Provide Authorization: Bearer <token> header.",
             )
             return
 
-        token = auth_header[7:]
-        if token not in self._allowed_tokens:
-            await self._send_error(
-                send,
-                status_code=401,
-                message="Invalid bearer token.",
-            )
-            return
+        # Other HTTP methods — reject.
+        await self._send_error(
+            send,
+            status_code=401,
+            message="Missing or invalid bearer token.",
+        )
 
-        await self.app(scope, receive, send)
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _is_open_request(self, body: bytes) -> bool:
+        """Return True if *body* is a JSON-RPC request whose method(s) are all open."""
+        try:
+            payload = json.loads(body)
+        except (json.JSONDecodeError, TypeError):
+            return False
+
+        if isinstance(payload, list):
+            methods = {m.get("method", "") for m in payload if isinstance(m, dict)}
+        elif isinstance(payload, dict):
+            methods = {payload.get("method", "")}
+        else:
+            return False
+
+        return bool(methods) and methods.issubset(self._OPEN_METHODS)
+
+    @staticmethod
+    async def _buffer_body(receive: Receive) -> bytes:
+        """Read the full request body from the ASGI receive channel."""
+        chunks: list[bytes] = []
+        while True:
+            message = await receive()
+            chunk = message.get("body", b"")
+            if chunk:
+                chunks.append(chunk)
+            if not message.get("more_body", False):
+                break
+        return b"".join(chunks)
+
+    @staticmethod
+    def _replay_receive(body: bytes) -> Receive:
+        """Return a receive callable that replays a buffered body once."""
+        sent = False
+
+        async def _receive() -> dict:
+            nonlocal sent
+            if not sent:
+                sent = True
+                return {"type": "http.request", "body": body, "more_body": False}
+            # After the body has been replayed, block until disconnect.
+            return {"type": "http.disconnect"}
+
+        return _receive
 
     @staticmethod
     async def _send_error(send: Send, *, status_code: int, message: str) -> None:
